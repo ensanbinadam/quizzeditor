@@ -1821,6 +1821,7 @@ ${teacherFooterHTML ? `<footer id="teacherFooter">${teacherFooterHTML}</footer>`
     state.timerId = null;
     state.isPaused = false;
     localStorage.removeItem(STORAGE_KEY);
+    localStorage.removeItem(STORAGE_KEY + '_config');
     state.questions = [];
     state.currentQuestion = 0;
     state.score = 0;
@@ -1911,8 +1912,14 @@ ${teacherFooterHTML ? `<footer id="teacherFooter">${teacherFooterHTML}</footer>`
         document.getElementById('instructionsInput').value = quizConfig.instructions;
         const tf = document.getElementById('teacherFooter');
         document.getElementById('footerInput').value =
-            (tf && tf.textContent.trim()) ||
-            document.getElementById('quizFooter').textContent;
+            (tf && tf.innerHTML.trim()) ||
+            document.getElementById('footerInput').defaultValue;
+        document.getElementById('logoAltInput').value = quizConfig.logoAlt;
+        const logoPreview = document.getElementById('logoPreview');
+        if (logoPreview) {
+            logoPreview.src = quizConfig.logo || '';
+            logoPreview.style.display = quizConfig.logo ? 'block' : 'none';
+        }
     }
   }
 
@@ -1959,6 +1966,17 @@ ${teacherFooterHTML ? `<footer id="teacherFooter">${teacherFooterHTML}</footer>`
             optionsLayout: state.optionsLayout,
         };
         localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+        
+        const teacherFooterContent = document.getElementById('teacherFooter')?.innerHTML || '';
+        const configPayload = {
+            title: quizConfig.title,
+            instructions: quizConfig.instructions,
+            logo: quizConfig.logo,
+            logoAlt: quizConfig.logoAlt,
+            teacherFooter: teacherFooterContent,
+        };
+        localStorage.setItem(STORAGE_KEY + '_config', JSON.stringify(configPayload));
+
     } catch (err) {
         console.error('Failed to save state:', err);
     }
@@ -1967,27 +1985,37 @@ ${teacherFooterHTML ? `<footer id="teacherFooter">${teacherFooterHTML}</footer>`
   function restore() {
     try {
         const raw = localStorage.getItem(STORAGE_KEY);
-        if (!raw) return;
-        const p = JSON.parse(raw);
-        [
-            'currentQuestion',
-            'score',
-            'timeLeft',
-            'questionTime',
-            'numeralType',
-            'optionsLayout',
-        ].forEach((k) => {
-            if (p[k] !== undefined) state[k] = p[k];
-        });
-        if (Array.isArray(p.answeredQuestions))
-            state.answeredQuestions = p.answeredQuestions;
-        if (Array.isArray(p.lastWrong)) state.lastWrong = p.lastWrong;
-        if (Array.isArray(p.shuffledMaps)) state.shuffledMaps = p.shuffledMaps;
-        if (Array.isArray(p.questions) && p.questions.length)
-            state.questions = p.questions.map((q) => {
-                ensureQuestionSanity(q);
-                return q;
+        if (raw) {
+            const p = JSON.parse(raw);
+            [
+                'currentQuestion',
+                'score',
+                'timeLeft',
+                'questionTime',
+                'numeralType',
+                'optionsLayout',
+            ].forEach((k) => {
+                if (p[k] !== undefined) state[k] = p[k];
             });
+            if (Array.isArray(p.answeredQuestions))
+                state.answeredQuestions = p.answeredQuestions;
+            if (Array.isArray(p.lastWrong)) state.lastWrong = p.lastWrong;
+            if (Array.isArray(p.shuffledMaps)) state.shuffledMaps = p.shuffledMaps;
+            if (Array.isArray(p.questions) && p.questions.length)
+                state.questions = p.questions.map((q) => {
+                    ensureQuestionSanity(q);
+                    return q;
+                });
+        }
+
+        const configRaw = localStorage.getItem(STORAGE_KEY + '_config');
+        if (configRaw) {
+            const configData = JSON.parse(configRaw);
+            quizConfig.title = configData.title || quizConfig.title;
+            quizConfig.instructions = configData.instructions || quizConfig.instructions;
+            quizConfig.logo = configData.logo || null;
+            quizConfig.logoAlt = configData.logoAlt || '';
+        }
     } catch (err) {
         console.error('Failed to restore state:', err);
     }
@@ -2029,6 +2057,17 @@ ${teacherFooterHTML ? `<footer id="teacherFooter">${teacherFooterHTML}</footer>`
         logoEl.alt = quizConfig.logoAlt || 'شعار';
         logoEl.style.display = quizConfig.logo ? 'block' : 'none';
     }
+
+    const configRaw = localStorage.getItem(STORAGE_KEY + '_config');
+    if (configRaw) {
+        try {
+            const configData = JSON.parse(configRaw);
+            if (configData.teacherFooter) {
+                document.getElementById('teacherFooter').innerHTML = sanitizeHTML(configData.teacherFooter);
+            }
+        } catch(e) { console.error("Failed to restore teacher footer", e); }
+    }
+
 
     if (state.questions.length === 0) {
         clearInterval(timerId);
@@ -2110,6 +2149,44 @@ ${teacherFooterHTML ? `<footer id="teacherFooter">${teacherFooterHTML}</footer>`
     // Config Panel
     document.getElementById('saveConfigBtn').addEventListener('click', saveConfig);
     document.getElementById('cancelConfigBtn').addEventListener('click', toggleConfigPanel);
+    document.getElementById('logoInput').addEventListener('change', function() {
+        const file = this.files && this.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const data = e.target.result;
+            quizConfig.logo = data;
+    
+            const previewEl = document.getElementById('logoPreview');
+            if (previewEl) {
+                previewEl.src = data;
+                previewEl.style.display = 'block';
+            }
+            
+            const mainLogoEl = document.getElementById('quizLogo');
+            if (mainLogoEl) {
+                mainLogoEl.src = data;
+                mainLogoEl.style.display = 'block';
+            }
+        };
+        reader.readAsDataURL(file);
+    });
+    document.getElementById('logoClearBtn').addEventListener('click', function() {
+        quizConfig.logo = null;
+        document.getElementById('logoInput').value = '';
+    
+        const previewEl = document.getElementById('logoPreview');
+        if (previewEl) {
+            previewEl.src = '';
+            previewEl.style.display = 'none';
+        }
+    
+        const mainLogoEl = document.getElementById('quizLogo');
+        if (mainLogoEl) {
+            mainLogoEl.src = '';
+            mainLogoEl.style.display = 'none';
+        }
+    });
 
     // Certificate Form & Display
     document.getElementById('generateCertBtn').addEventListener('click', generateCertificate);
