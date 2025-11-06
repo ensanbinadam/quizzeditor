@@ -1,0 +1,5 @@
+{
+  "name": "Interactive Quiz Builder",
+  "description": "An interactive quiz application for teachers to create, edit, and share quizzes with students. Supports multiple-choice and fill-in-the-blank questions, with features to generate a standalone student version.",
+  "requestFramePermissions": []
+}
