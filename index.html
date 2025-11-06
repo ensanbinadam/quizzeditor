@@ -1825,18 +1825,11 @@
         } else if (q.type === "matching") {
           q.prompts = q.prompts || [];
           q.answers = q.answers || [];
-          for (let i = 0; i < 4; i++) {
-            if (q.prompts[i] === undefined) q.prompts[i] = "";
-            if (q.answers[i] === undefined) q.answers[i] = "";
-          }
           delete q.options;
           delete q.correct;
           delete q.correctAnswer;
         } else if (q.type === "ordering") {
           q.items = q.items || [];
-          for (let i = 0; i < 5; i++) {
-            if (q.items[i] === undefined) q.items[i] = "";
-          }
           delete q.options;
           delete q.correct;
           delete q.correctAnswer;
