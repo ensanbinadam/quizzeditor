@@ -1,3 +1,4 @@
+
 (function() {
   'use strict';
 
@@ -19,12 +20,12 @@
 
   const STORAGE_KEY = "quiz_teacher_lite_no_math_ar_v6_matching";
 
-  const quizConfig = window.quizConfig || {
+  const quizConfig = {
     title: "الاختبار التفاعلي",
     instructions: "اختر الإجابة الصحيحة لكل سؤال",
+    logo: null,
+    logoAlt: "",
   };
-  quizConfig.logo = quizConfig.logo || null;
-  quizConfig.logoAlt = quizConfig.logoAlt || "";
 
   // === From js/utils.js ===
   const EASTERN = ["٠", "١", "٢", "٣", "٤", "٥", "٦", "٧", "٨", "٩"];
@@ -2168,6 +2169,7 @@ ${teacherFooterHTML ? `<footer id="teacherFooter">${teacherFooterHTML}</footer>`
                 mainLogoEl.src = data;
                 mainLogoEl.style.display = 'block';
             }
+            persist(); 
         };
         reader.readAsDataURL(file);
     });
@@ -2186,6 +2188,7 @@ ${teacherFooterHTML ? `<footer id="teacherFooter">${teacherFooterHTML}</footer>`
             mainLogoEl.src = '';
             mainLogoEl.style.display = 'none';
         }
+        persist();
     });
 
     // Certificate Form & Display
