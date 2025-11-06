@@ -2819,7 +2819,9 @@
           document.querySelector("#options .nav-btn")?.parentElement.remove(); // Remove submit button container
         } else if (q.type === "ordering") {
           const container = document.querySelector(".ordering-container");
-          const orderedItems = [...container.querySelectorAll(".ordering-item")];
+          const orderedItems = [
+            ...container.querySelectorAll(".ordering-item"),
+          ];
           const userOrder = orderedItems.map(
             (item) => item.dataset.originalText
           );
