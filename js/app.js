@@ -2533,19 +2533,21 @@ window.saveEdit = function () {
   if (!q.reading) q.reading = { text: "", image: null, audio: null };
   if (!q.question) q.question = { text: "", image: null };
 
+  const cleanHTML = (html) => (html || "").replace(/&nbsp;$/, " ").trim();
+
   const questionType = document.getElementById("editQuestionType").value;
   if (q.type !== questionType) {
     q.type = questionType;
     window.ensureQuestionSanity(q);
   }
 
-  q.reading.text = (
-    document.getElementById("editReadingText").innerHTML || ""
-  ).trim();
-  q.question.text = (
-    document.getElementById("editQuestionText").innerHTML || ""
-  ).trim();
-  q.feedback = (document.getElementById("editFeedback").innerHTML || "").trim();
+  q.reading.text = cleanHTML(
+    document.getElementById("editReadingText").innerHTML
+  );
+  q.question.text = cleanHTML(
+    document.getElementById("editQuestionText").innerHTML
+  );
+  q.feedback = cleanHTML(document.getElementById("editFeedback").innerHTML);
 
   if (q.type === "multiple-choice") {
     const optionCards = document.querySelectorAll(
