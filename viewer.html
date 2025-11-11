@@ -1,1057 +1,0 @@
-<!DOCTYPE html>
-<html dir="rtl" lang="ar">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>الاختبار التفاعلي - نسخة المعلم</title>
-
-    <!-- خط -->
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;500;700&display=swap"
-      rel="stylesheet"
-    />
-
-    <!-- DOMPurify لحماية HTML المُحمّل -->
-    <script
-      src="https://cdn.jsdelivr.net/npm/dompurify@3.1.6/dist/purify.min.js"
-      defer
-    ></script>
-
-    <!-- مكتبة لحفظ الشهادة كصورة -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-
-    <link rel="stylesheet" href="css/styles.css" />
-  </head>
-  <body>
-    <button
-      class="config-btn"
-      onclick="toggleConfigPanel()"
-      aria-label="لوحة التحكم"
-    >
-      ⚙️
-    </button>
-    <div class="container">
-      <div class="header header-grid">
-        <!-- يمين: شعار -->
-        <div class="header-logo">
-          <img
-            id="quizLogo"
-            alt="شعار"
-            style="display: none; max-width: 100%; height: auto"
-          />
-        </div>
-
-        <!-- يسار: عنوان وتوجيهات -->
-        <div class="header-main">
-          <h1 id="quizTitle">الاختبار التفاعلي</h1>
-          <p id="instructions">اختر الإجابة الصحيحة لكل سؤال</p>
-        </div>
-      </div>
-
-      <div class="buttons-container" id="teacherButtons">
-        <button class="action-btn" id="loadButton">تحميل الأسئلة</button>
-        <button
-          class="action-btn settings-btn"
-          id="settingsBtn"
-          onclick="toggleSettingsPanel()"
-        >
-          إعدادات العرض
-        </button>
-        <button class="action-btn" id="editButton" onclick="toggleEditMode()">
-          تحرير السؤال
-        </button>
-        <button class="action-btn" id="saveQuestionsButton">حفظ الأسئلة</button>
-        <button class="action-btn" id="saveAppButton">نسخة الطالب</button>
-        <button
-          class="action-btn"
-          id="resetProgressBtn"
-          onclick="resetProgress()"
-        >
-          تصفير التقدم
-        </button>
-        <button
-          class="action-btn"
-          id="resetQuestionsBtn"
-          onclick="resetQuestions()"
-        >
-          تصفير الأسئلة
-        </button>
-      </div>
-
-      <!-- لوحة Edit Question (أضيف حذف ولصق للوسائط) -->
-      <div
-        class="settings-panel"
-        id="editPanel"
-        style="display: none; text-align: right"
-      >
-        <div class="settings-title">تحرير السؤال</div>
-
-        <div class="settings-option">
-          <label for="editQuestionType">نوع السؤال:</label>
-          <select id="editQuestionType" class="form-control">
-            <option value="multiple-choice">اختيار من متعدد</option>
-            <option value="fill-in-the-blank">املأ الفراغ</option>
-            <option value="true-false">صح / خطأ</option>
-            <option value="short-answer">إجابة قصيرة</option>
-            <option value="matching">مطابقة</option>
-            <option value="ordering">ترتيب</option>
-            <option value="connecting-lines">توصيل</option>
-          </select>
-        </div>
-
-        <div class="settings-option">
-          <label for="editReadingText">النص القرائي:</label>
-          <div class="rich-text-editor-container">
-            <div class="rte-toolbar" data-target="editReadingText">
-              <button type="button" class="rte-btn" data-command="bold">
-                B
-              </button>
-              <button type="button" class="rte-btn" data-command="italic">
-                I
-              </button>
-              <button type="button" class="rte-btn" data-command="underline">
-                U
-              </button>
-              <button
-                type="button"
-                class="rte-btn remove-format"
-                data-command="removeFormat"
-              >
-                T̶
-              </button>
-              <button
-                type="button"
-                class="rte-btn"
-                data-command="justifyRight"
-                title="محاذاة لليمين"
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="16"
-                  height="16"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                >
-                  <line x1="21" y1="10" x2="7" y2="10"></line>
-                  <line x1="21" y1="6" x2="3" y2="6"></line>
-                  <line x1="21" y1="14" x2="3" y2="14"></line>
-                  <line x1="21" y1="18" x2="7" y2="18"></line>
-                </svg>
-              </button>
-              <button
-                type="button"
-                class="rte-btn"
-                data-command="justifyCenter"
-                title="توسيط"
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="16"
-                  height="16"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                >
-                  <line x1="18" y1="10" x2="6" y2="10"></line>
-                  <line x1="21" y1="6" x2="3" y2="6"></line>
-                  <line x1="21" y1="14" x2="3" y2="14"></line>
-                  <line x1="18" y1="18" x2="6" y2="18"></line>
-                </svg>
-              </button>
-              <button
-                type="button"
-                class="rte-btn"
-                data-command="justifyLeft"
-                title="محاذاة لليسار"
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="16"
-                  height="16"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                >
-                  <line x1="17" y1="10" x2="3" y2="10"></line>
-                  <line x1="21" y1="6" x2="3" y2="6"></line>
-                  <line x1="17" y1="14" x2="3" y2="14"></line>
-                  <line x1="21" y1="18" x2="3" y2="18"></line>
-                </svg>
-              </button>
-              <input
-                type="color"
-                class="rte-btn"
-                data-command="foreColor"
-                title="لون الخط"
-              />
-              <select class="rte-btn" data-command="fontSize" title="حجم الخط">
-                <option value="">حجم الخط</option>
-                <option value="1">صغير جداً</option>
-                <option value="2">صغير</option>
-                <option value="3">عادي</option>
-                <option value="4">متوسط</option>
-                <option value="5">كبير</option>
-                <option value="6">كبير جداً</option>
-                <option value="7">ضخم</option>
-              </select>
-              <select
-                class="rte-btn"
-                data-command="insertSymbol"
-                title="إدراج رمز"
-              >
-                <option value="">رمز</option>
-                <option value=">">&gt;</option>
-                <option value="<">&lt;</option>
-                <option value="≥">≥</option>
-                <option value="≤">≤</option>
-                <option value="≠">≠</option>
-                <option value="≈">≈</option>
-                <option value="°">°</option>
-                <option value="±">±</option>
-                <option value="◯">◯</option>
-                <option value="√">√</option>
-                <option value="+">+</option>
-                <option value="-">-</option>
-                <option value="×">×</option>
-                <option value="÷">÷</option>
-              </select>
-            </div>
-            <div
-              id="editReadingText"
-              class="rte-content"
-              contenteditable="true"
-            ></div>
-          </div>
-
-          <div class="inline-tools">
-            <div>
-              <label for="editReadingImage">صورة النص القرائي:</label>
-              <input type="file" id="editReadingImage" accept="image/*" />
-              <button
-                type="button"
-                class="tiny-btn paste"
-                id="readingImagePasteBtn"
-              >
-                لصق
-              </button>
-              <button
-                type="button"
-                class="tiny-btn del"
-                id="readingImageClearBtn"
-              >
-                حذف
-              </button>
-              <img id="readingImagePreview" class="preview-img" />
-            </div>
-
-            <div>
-              <label for="editReadingAudio">الصوت القرائي:</label>
-              <div class="inline-tools">
-                <button
-                  type="button"
-                  class="nav-btn"
-                  style="padding: 6px 12px"
-                  onclick="document.getElementById('editReadingAudio').click()"
-                >
-                  إدراج صوت
-                </button>
-                <input
-                  type="file"
-                  id="editReadingAudio"
-                  accept="audio/*"
-                  style="display: none"
-                />
-                <button
-                  type="button"
-                  class="tiny-btn del"
-                  id="readingAudioClearBtn"
-                >
-                  حذف الصوت
-                </button>
-              </div>
-              <audio
-                id="readingAudioPreview"
-                class="preview-audio"
-                controls
-                preload="none"
-              ></audio>
-            </div>
-          </div>
-        </div>
-
-        <div class="settings-option">
-          <label for="editQuestionText">نص السؤال:</label>
-          <div class="rich-text-editor-container">
-            <div class="rte-toolbar" data-target="editQuestionText">
-              <button type="button" class="rte-btn" data-command="bold">
-                B
-              </button>
-              <button type="button" class="rte-btn" data-command="italic">
-                I
-              </button>
-              <button type="button" class="rte-btn" data-command="underline">
-                U
-              </button>
-              <button
-                type="button"
-                class="rte-btn remove-format"
-                data-command="removeFormat"
-              >
-                T̶
-              </button>
-              <button
-                type="button"
-                class="rte-btn"
-                data-command="justifyRight"
-                title="محاذاة لليمين"
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="16"
-                  height="16"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                >
-                  <line x1="21" y1="10" x2="7" y2="10"></line>
-                  <line x1="21" y1="6" x2="3" y2="6"></line>
-                  <line x1="21" y1="14" x2="3" y2="14"></line>
-                  <line x1="21" y1="18" x2="7" y2="18"></line>
-                </svg>
-              </button>
-              <button
-                type="button"
-                class="rte-btn"
-                data-command="justifyCenter"
-                title="توسيط"
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="16"
-                  height="16"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                >
-                  <line x1="18" y1="10" x2="6" y2="10"></line>
-                  <line x1="21" y1="6" x2="3" y2="6"></line>
-                  <line x1="21" y1="14" x2="3" y2="14"></line>
-                  <line x1="18" y1="18" x2="6" y2="18"></line>
-                </svg>
-              </button>
-              <button
-                type="button"
-                class="rte-btn"
-                data-command="justifyLeft"
-                title="محاذاة لليسار"
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="16"
-                  height="16"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                >
-                  <line x1="17" y1="10" x2="3" y2="10"></line>
-                  <line x1="21" y1="6" x2="3" y2="6"></line>
-                  <line x1="17" y1="14" x2="3" y2="14"></line>
-                  <line x1="21" y1="18" x2="3" y2="18"></line>
-                </svg>
-              </button>
-              <input
-                type="color"
-                class="rte-btn"
-                data-command="foreColor"
-                title="لون الخط"
-              />
-              <select class="rte-btn" data-command="fontSize" title="حجم الخط">
-                <option value="">حجم الخط</option>
-                <option value="1">صغير جداً</option>
-                <option value="2">صغير</option>
-                <option value="3">عادي</option>
-                <option value="4">متوسط</option>
-                <option value="5">كبير</option>
-                <option value="6">كبير جداً</option>
-                <option value="7">ضخم</option>
-              </select>
-              <select
-                class="rte-btn"
-                data-command="insertSymbol"
-                title="إدراج رمز"
-              >
-                <option value="">رمز</option>
-                <option value=">">&gt;</option>
-                <option value="<">&lt;</option>
-                <option value="≥">≥</option>
-                <option value="≤">≤</option>
-                <option value="≠">≠</option>
-                <option value="≈">≈</option>
-                <option value="°">°</option>
-                <option value="±">±</option>
-                <option value="◯">◯</option>
-                <option value="√">√</option>
-                <option value="+">+</option>
-                <option value="-">-</option>
-                <option value="×">×</option>
-                <option value="÷">÷</option>
-              </select>
-            </div>
-            <div
-              id="editQuestionText"
-              class="rte-content"
-              contenteditable="true"
-            ></div>
-          </div>
-          <div class="inline-tools">
-            <label for="editQuestionImage">صورة السؤال:</label>
-            <input type="file" id="editQuestionImage" accept="image/*" />
-            <button
-              type="button"
-              class="tiny-btn paste"
-              id="questionImagePasteBtn"
-            >
-              لصق
-            </button>
-            <button
-              type="button"
-              class="tiny-btn del"
-              id="questionImageClearBtn"
-            >
-              حذف
-            </button>
-          </div>
-          <img id="questionImagePreview" class="preview-img" />
-        </div>
-
-        <div id="multipleChoiceEditor">
-          <div class="settings-option">
-            <div class="dynamic-editor-header">
-              <label>الخيارات (يجب تحديد الإجابة الصحيحة):</label>
-              <button type="button" class="nav-btn" id="addMcOptionBtn">
-                + إضافة خيار
-              </button>
-            </div>
-            <div
-              id="multipleChoiceOptionsContainer"
-              class="dynamic-items-container"
-            ></div>
-          </div>
-        </div>
-
-        <div id="fillInTheBlankEditor" style="display: none">
-          <div class="settings-option">
-            <label for="editCorrectAnswer">الإجابة الصحيحة:</label>
-            <input
-              type="text"
-              id="editCorrectAnswer"
-              class="form-control"
-              placeholder="اكتب الإجابة هنا..."
-            />
-            <p style="font-size: 0.9em; color: #555; margin-top: 8px">
-              ملاحظة: يمكنك وضع عدة إجابات صحيحة بفصلها بعلامة | (مثال:
-              إجابة1|إجابة2)
-            </p>
-          </div>
-        </div>
-
-        <div id="trueFalseEditor" style="display: none">
-          <div class="settings-option">
-            <label>الإجابة الصحيحة:</label>
-            <div
-              style="
-                display: flex;
-                gap: 20px;
-                align-items: center;
-                margin-top: 10px;
-              "
-            >
-              <label
-                style="
-                  display: flex;
-                  align-items: center;
-                  gap: 8px;
-                  cursor: pointer;
-                "
-              >
-                <input type="radio" name="correctTFAnswer" value="true" />
-                <span>صح</span>
-              </label>
-              <label
-                style="
-                  display: flex;
-                  align-items: center;
-                  gap: 8px;
-                  cursor: pointer;
-                "
-              >
-                <input type="radio" name="correctTFAnswer" value="false" />
-                <span>خطأ</span>
-              </label>
-            </div>
-          </div>
-        </div>
-
-        <div id="shortAnswerEditor" style="display: none">
-          <div class="settings-option">
-            <label for="editShortAnswer">الإجابات النموذجية المحتملة:</label>
-            <textarea
-              id="editShortAnswer"
-              class="form-control"
-              rows="4"
-              placeholder="اكتب الإجابات النموذجية هنا..."
-            ></textarea>
-            <p style="font-size: 0.9em; color: #555; margin-top: 8px">
-              افصل بين كل إجابة بعلامة |. سيتم اعتبار إجابة الطالب صحيحة إذا
-              تطابقت بنسبة 70% مع أي من هذه الإجابات.
-            </p>
-          </div>
-        </div>
-
-        <div id="matchingEditor" style="display: none">
-          <div class="settings-option">
-            <div class="dynamic-editor-header">
-              <label>أزواج المطابقة:</label>
-              <button type="button" class="nav-btn" id="addMatchPairBtn">
-                + إضافة زوج
-              </button>
-            </div>
-            <div id="matchingPairsContainer" class="dynamic-items-container">
-              <!-- الأزواج ستضاف هنا بواسطة JavaScript -->
-            </div>
-            <p style="font-size: 0.9em; color: #555; margin-top: 8px">
-              اسحب وأفلت لإعادة الترتيب. يجب ملء زوجين على الأقل.
-            </p>
-          </div>
-        </div>
-
-        <div id="connectingLinesEditor" style="display: none">
-          <div class="settings-option">
-            <div class="dynamic-editor-header">
-              <label>أزواج التوصيل:</label>
-              <button type="button" class="nav-btn" id="addConnectPairBtn">
-                + إضافة زوج
-              </button>
-            </div>
-            <div
-              id="connectingPairsContainer"
-              class="dynamic-items-container"
-            ></div>
-            <p style="font-size: 0.9em; color: #555; margin-top: 8px">
-              اسحب وأفلت لإعادة الترتيب. يجب ملء زوجين على الأقل.
-            </p>
-          </div>
-        </div>
-
-        <div id="orderingEditor" style="display: none">
-          <div class="settings-option">
-            <div class="dynamic-editor-header">
-              <label>عناصر الترتيب (بالترتيب الصحيح):</label>
-              <button type="button" class="nav-btn" id="addOrderItemBtn">
-                + إضافة عنصر
-              </button>
-            </div>
-            <div id="orderingItemsContainer" class="dynamic-items-container">
-              <!-- العناصر ستضاف هنا بواسطة JavaScript -->
-            </div>
-            <p style="font-size: 0.9em; color: #555; margin-top: 8px">
-              اسحب وأفلت لإعادة الترتيب. يجب ملء عنصرين على الأقل.
-            </p>
-          </div>
-        </div>
-
-        <div class="settings-option">
-          <label for="editFeedback">التغذية الراجعة (اختياري):</label>
-          <div class="rich-text-editor-container">
-            <div class="rte-toolbar" data-target="editFeedback">
-              <button type="button" class="rte-btn" data-command="bold">
-                B
-              </button>
-              <button type="button" class="rte-btn" data-command="italic">
-                I
-              </button>
-              <button type="button" class="rte-btn" data-command="underline">
-                U
-              </button>
-              <button
-                type="button"
-                class="rte-btn remove-format"
-                data-command="removeFormat"
-              >
-                T̶
-              </button>
-              <button
-                type="button"
-                class="rte-btn"
-                data-command="justifyRight"
-                title="محاذاة لليمين"
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="16"
-                  height="16"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                >
-                  <line x1="21" y1="10" x2="7" y2="10"></line>
-                  <line x1="21" y1="6" x2="3" y2="6"></line>
-                  <line x1="21" y1="14" x2="3" y2="14"></line>
-                  <line x1="21" y1="18" x2="7" y2="18"></line>
-                </svg>
-              </button>
-              <button
-                type="button"
-                class="rte-btn"
-                data-command="justifyCenter"
-                title="توسيط"
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="16"
-                  height="16"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                >
-                  <line x1="18" y1="10" x2="6" y2="10"></line>
-                  <line x1="21" y1="6" x2="3" y2="6"></line>
-                  <line x1="21" y1="14" x2="3" y2="14"></line>
-                  <line x1="18" y1="18" x2="6" y2="18"></line>
-                </svg>
-              </button>
-              <button
-                type="button"
-                class="rte-btn"
-                data-command="justifyLeft"
-                title="محاذاة لليسار"
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="16"
-                  height="16"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                >
-                  <line x1="17" y1="10" x2="3" y2="10"></line>
-                  <line x1="21" y1="6" x2="3" y2="6"></line>
-                  <line x1="17" y1="14" x2="3" y2="14"></line>
-                  <line x1="21" y1="18" x2="3" y2="18"></line>
-                </svg>
-              </button>
-              <input
-                type="color"
-                class="rte-btn"
-                data-command="foreColor"
-                title="لون الخط"
-              />
-              <select class="rte-btn" data-command="fontSize" title="حجم الخط">
-                <option value="">حجم الخط</option>
-                <option value="1">صغير جداً</option>
-                <option value="2">صغير</option>
-                <option value="3">عادي</option>
-                <option value="4">متوسط</option>
-                <option value="5">كبير</option>
-                <option value="6">كبير جداً</option>
-                <option value="7">ضخم</option>
-              </select>
-              <select
-                class="rte-btn"
-                data-command="insertSymbol"
-                title="إدراج رمز"
-              >
-                <option value="">رمز</option>
-                <option value=">">&gt;</option>
-                <option value="<">&lt;</option>
-                <option value="≥">≥</option>
-                <option value="≤">≤</option>
-                <option value="≠">≠</option>
-                <option value="≈">≈</option>
-                <option value="°">°</option>
-                <option value="±">±</option>
-                <option value="◯">◯</option>
-                <option value="√">√</option>
-                <option value="+">+</option>
-                <option value="-">-</option>
-                <option value="×">×</option>
-                <option value="÷">÷</option>
-              </select>
-            </div>
-            <div
-              id="editFeedback"
-              class="rte-content"
-              contenteditable="true"
-            ></div>
-          </div>
-          <p style="font-size: 0.9em; color: #555; margin-top: 8px">
-            إذا تركت هذا الحقل فارغًا، فلن تظهر أي تغذية راجعة للطالب بعد
-            إجابته.
-          </p>
-        </div>
-
-        <div
-          class="settings-option"
-          style="
-            margin-top: 15px;
-            padding-top: 15px;
-            border-top: 1px solid #eee;
-          "
-        >
-          <label>ملاحظة:</label>
-          <p style="font-size: 0.9em; color: #555; margin: 0">
-            عند حفظ السؤال، سيتم فتح نموذج لسؤال جديد فارغ تلقائياً لتسهيل
-            الإضافة المتسلسلة. لإغلاق المحرر، اضغط على زر "إلغاء".
-          </p>
-        </div>
-
-        <div
-          class="settings-footer"
-          style="
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-            justify-content: center;
-          "
-        >
-          <button
-            class="nav-btn"
-            onclick="saveEdit()"
-            style="background: #28a745"
-          >
-            حفظ
-          </button>
-          <button
-            class="nav-btn"
-            onclick="addNewQuestion()"
-            style="background: #007bff"
-          >
-            إضافة سؤال
-          </button>
-          <button
-            class="nav-btn"
-            onclick="duplicateCurrentQuestion()"
-            style="background: #17a2b8"
-          >
-            نسخ السؤال
-          </button>
-          <button
-            class="nav-btn"
-            onclick="deleteCurrentQuestion()"
-            style="background: #dc3545"
-          >
-            حذف السؤال
-          </button>
-          <button class="nav-btn" onclick="cancelEdit()">إلغاء</button>
-        </div>
-      </div>
-
-      <div class="settings-panel" id="settingsPanel" style="text-align: right">
-        <div class="settings-title">إعدادات العرض</div>
-        <div class="settings-option">
-          <label for="numeralType">شكل الأرقام:</label>
-          <select id="numeralType" onchange="changeNumeralType()">
-            <option value="arabic">أرقام عربية غربية (1, 2, 3)</option>
-            <option value="eastern" selected>
-              أرقام عربية شرقية (١, ٢, ٣)
-            </option>
-          </select>
-        </div>
-
-        <div class="settings-option">
-          <button
-            onclick="cleanEasternNumerals()"
-            style="
-              margin-top: 8px;
-              background-color: #dc3545;
-              color: white;
-              padding: 6px 10px;
-              border: none;
-              border-radius: 6px;
-              cursor: pointer;
-            "
-          >
-            تحويل الأرقام الشرقية في الأسئلة
-          </button>
-        </div>
-
-        <div class="settings-option">
-          <label for="questionTime">وقت السؤال (بالثواني):</label>
-          <input
-            id="questionTime"
-            type="number"
-            min="5"
-            max="180"
-            value="30"
-            onchange="changeQuestionTime()"
-          />
-        </div>
-
-        <div class="settings-option">
-          <label for="optionsLayout">الاختيارات:</label>
-          <select id="optionsLayout" onchange="changeOptionsLayout()">
-            <option value="2x2" selected>شبكة ٢×٢ (افتراضي)</option>
-            <option value="4x1">صف واحد ٤×١</option>
-          </select>
-        </div>
-
-        <div class="settings-footer">
-          <button class="nav-btn" onclick="toggleSettingsPanel()">
-            حفظ وإغلاق
-          </button>
-        </div>
-      </div>
-
-      <div class="counters" id="countersBox">
-        <div id="questionCounter" aria-live="polite"></div>
-        <div id="timer" aria-live="polite"></div>
-        <div id="scoreCounter" aria-live="polite"></div>
-      </div>
-
-      <div class="reading-text" id="readingText" style="display: none"></div>
-
-      <div class="quiz-box">
-        <div class="question" id="question"></div>
-        <div class="options" id="options"></div>
-        <div class="controls">
-          <button
-            class="nav-btn"
-            id="prevBtn"
-            onclick="previousQuestion()"
-            disabled
-          >
-            السابق
-          </button>
-          <button
-            class="nav-btn pause-btn"
-            id="pauseBtn"
-            onclick="togglePause()"
-          >
-            إيقاف مؤقت
-          </button>
-          <button
-            class="nav-btn"
-            id="nextBtn"
-            onclick="nextQuestion()"
-            disabled
-          >
-            التالي
-          </button>
-        </div>
-        <div class="progress-bar">
-          <div class="progress" id="progress"></div>
-        </div>
-      </div>
-    </div>
-
-    <div class="score-board" id="scoreBoard">
-      <h2>
-        نتيجتك النهائية: <span id="finalScore">٠</span>/<span
-          id="totalQuestions"
-          >٠</span
-        >
-      </h2>
-
-      <!-- رسالة عدم الاستحقاق -->
-      <div
-        class="no-certificate-message"
-        id="noCertificateMsg"
-        style="display: none"
-      >
-        <p>
-          للحصول على شهادة الإنجاز، يجب تحقيق 80% على الأقل من الدرجة الكلية
-        </p>
-        <p>حاول مرة أخرى للوصول إلى هذا المستوى!</p>
-      </div>
-
-      <div class="certificate-buttons">
-        <button
-          class="certificate-btn"
-          id="certificateBtn"
-          onclick="openCertificateForm()"
-          style="display: none"
-        >
-          🏆 الحصول على شهادة الإنجاز
-        </button>
-
-        <button class="restart-btn" onclick="restartQuiz()">
-          إعادة المحاولة
-        </button>
-      </div>
-    </div>
-
-    <div class="config-panel" id="configPanel" style="text-align: right">
-      <h3>لوحة التحكم</h3>
-      <label for="titleInput">عنوان الاختبار:</label>
-      <input class="form-control" id="titleInput" type="text" />
-      <label for="instructionsInput" class="form-group">التعليمات:</label>
-      <textarea class="form-control" id="instructionsInput" rows="4"></textarea>
-      <div class="form-group">
-        <label for="footerInput">نص التذييل:</label>
-        <textarea class="form-control" id="footerInput" rows="3">
-إعداد وتصميم / ملتقى معلمي ومعلمات المواد الأخرى ـ المملكة العربية السعودية</textarea
-        >
-      </div>
-      <div class="form-group">
-        <label for="logoInput">شعار الترويسة:</label>
-        <input type="file" id="logoInput" accept="image/*" />
-        <div class="inline-tools" style="margin-top: 6px">
-          <button type="button" class="tiny-btn del" id="logoClearBtn">
-            حذف الشعار
-          </button>
-        </div>
-        <img id="logoPreview" class="preview-img" alt="معاينة الشعار" />
-        <label for="logoAltInput" style="margin-top: 8px; display: block"
-          >نص بديل للشعار (Alt):</label
-        >
-        <input
-          class="form-control"
-          id="logoAltInput"
-          type="text"
-          placeholder="مثال: شعار المدرسة"
-        />
-      </div>
-      <div class="form-group" style="display: flex; gap: 8px; flex-wrap: wrap">
-        <button class="nav-btn" onclick="saveConfig()">حفظ التغييرات</button>
-        <button class="nav-btn" onclick="toggleConfigPanel()">إلغاء</button>
-      </div>
-    </div>
-    <!-- تذييل المعلم (ديناميكي من لوحة التحكم) -->
-    <footer id="teacherFooter"></footer>
-
-    <!-- التذييل العام الثابت -->
-    <footer id="quizFooter">
-      <a
-        href="https://t.me/Interact2030"
-        target="_blank"
-        rel="noopener noreferrer"
-        class="footer-link-wrap"
-      >
-        برمجة و تصميم/ ملتقى التعليم التفاعلي بملتقى معلمي ومعلمات الرياضيات ـ
-        المملكة العربية السعودية
-      </a>
-    </footer>
-
-    <!-- نموذج إدخال بيانات الشهادة -->
-    <div
-      class="config-panel"
-      id="certificateForm"
-      style="text-align: right; display: none"
-    >
-      <h3>بيانات الشهادة</h3>
-
-      <div class="form-group">
-        <label for="studentNameInput">اسم الطالب:</label>
-        <input
-          class="form-control"
-          id="studentNameInput"
-          type="text"
-          placeholder="أدخل اسم الطالب"
-        />
-      </div>
-
-      <div class="form-group">
-        <label for="teacherNameInput">اسم المعلم:</label>
-        <input
-          class="form-control"
-          id="teacherNameInput"
-          type="text"
-          placeholder="أدخل اسم المعلم"
-          value="معلم المادة"
-        />
-      </div>
-
-      <div class="form-group" style="display: flex; gap: 8px; flex-wrap: wrap">
-        <button
-          class="nav-btn"
-          onclick="generateCertificate()"
-          style="background: #28a745"
-        >
-          إنشاء الشهادة
-        </button>
-        <button class="nav-btn" onclick="closeCertificateForm()">إلغاء</button>
-      </div>
-    </div>
-
-    <!-- عرض الشهادة -->
-    <div class="certificate-container" id="certificateContainer">
-      <div class="certificate-header">
-        <img id="certificateLogo" alt="شعار" class="certificate-logo" />
-        <h2 class="certificate-quiz-title" id="certificateQuizTitle">
-          عنوان الاختبار
-        </h2>
-      </div>
-
-      <h1 class="certificate-title">شهادة إنجاز</h1>
-
-      <div class="certificate-body">
-        <div class="student-name" id="certificateStudentName">اسم الطالب</div>
-
-        <div class="achievement-text">
-          تهانينا! لقد أتممت الاختبار التفاعلي بنجاح
-        </div>
-
-        <div class="score-text" id="certificateScoreText">
-          حققت نتيجة 20 من 25
-        </div>
-
-        <div class="achievement-text">
-          نظير جهودك المتميزة وإصرارك على التعلّم، نقدم لك هذه الشهادة تقديرًا
-          لإنجازك البارع
-        </div>
-
-        <div class="teacher-name" id="certificateTeacherName">
-          المعلم: اسم المعلم
-        </div>
-      </div>
-
-      <div class="certificate-footer">
-        <p>شهادة معتمدة من نظام الاختبارات التفاعلية</p>
-      </div>
-
-      <div class="certificate-buttons">
-        <button class="certificate-btn print" onclick="printCertificate()">
-          🖨️ طباعة الشهادة
-        </button>
-        <button class="certificate-btn" onclick="downloadCertificate()">
-          📥 حفظ كصورة
-        </button>
-        <button class="certificate-btn close" onclick="closeCertificate()">
-          ✕ إغلاق
-        </button>
-      </div>
-    </div>
-
-    <script src="js/app.js" defer></script>
-  </body>
-</html>
