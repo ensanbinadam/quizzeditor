@@ -1018,6 +1018,11 @@ body {
   align-items: center;
   justify-content: center;
 }
+.rte-btn.remove-format {
+  font-weight: normal;
+  font-size: 1.2em;
+  line-height: 1;
+}
 .rte-btn:hover {
   background-color: #e0e0e0;
 }

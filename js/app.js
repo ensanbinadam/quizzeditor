@@ -2240,11 +2240,17 @@ window.attachEditPanelEvents = function () {
         "bold",
         "italic",
         "underline",
+        "removeFormat",
         "justifyRight",
         "justifyCenter",
         "justifyLeft",
       ];
       if (!allowedCommands.includes(command)) return;
+      if (command === "removeFormat") {
+        document.execCommand(command, false, null);
+        return;
+      }
+
       const editorId = toolbar.dataset.target;
       const editor = document.getElementById(editorId);
       if (editor) editor.focus();
@@ -2533,7 +2539,8 @@ window.saveEdit = function () {
   if (!q.reading) q.reading = { text: "", image: null, audio: null };
   if (!q.question) q.question = { text: "", image: null };
 
-  const cleanHTML = (html) => (html || "").replace(/&nbsp;$/, " ").trim();
+  const cleanHTML = (html) =>
+    (html || "").replace(/(<p><br><\/p>|\s|&nbsp;)*$/, "").trim();
 
   const questionType = document.getElementById("editQuestionType").value;
   if (q.type !== questionType) {
