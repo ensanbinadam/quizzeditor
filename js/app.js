@@ -833,8 +833,6 @@ window.showQuestion = function () {
       if (contentData && contentData.image) {
         const img = document.createElement("img");
         img.src = contentData.image;
-        img.style.maxHeight = "80px";
-        img.style.objectFit = "contain";
         img.alt = "صورة عنصر المطابقة";
         contentContainer.appendChild(img);
       }
@@ -970,9 +968,6 @@ window.showQuestion = function () {
       if (itemData && itemData.image) {
         const img = document.createElement("img");
         img.src = itemData.image;
-        img.style.maxHeight = "50px";
-        img.style.maxWidth = "80px";
-        img.style.objectFit = "contain";
         img.alt = ""; // Decorative
         img.style.pointerEvents = "none"; // Prevent image drag interference
         fragment.appendChild(img);
@@ -1099,7 +1094,6 @@ window.renderConnectingLines = function (q, optionsElement) {
     if (contentData.image) {
       const img = document.createElement("img");
       img.src = contentData.image;
-      img.style.maxHeight = "60px";
       content.appendChild(img);
     }
     if (contentData.text) {
@@ -3152,9 +3146,9 @@ window.saveAppForOfflineUse = function () {
   .option.wrong { background: #fdecea; color: #a52834; border-color: var(--color-danger); font-weight: 700; }
   .option[aria-disabled="true"] { pointer-events: none; opacity: 0.9; }
   .option-content { display: flex; flex-direction: column; align-items: center; gap: 8px; width: 100%; }
-  .option-content img { width: 100%; max-height: 100px; object-fit: contain; border-radius: var(--border-radius-sm); }
+  .option-content img { width: 100%; max-height: 150px; object-fit: contain; border-radius: var(--border-radius-sm); }
   .option-content span { text-align: center; font-size: 18px; font-weight: 700; color: var(--color-text); }
-  .matching-container { display: flex; flex-wrap: wrap; gap: 20px; justify-content: space-between; margin-bottom: 20px; } .matching-column { flex: 1; min-width: 250px; display: flex; flex-direction: column; gap: 10px; } .matching-prompt-item { display: flex; align-items: center; gap: 10px; padding: 10px; background-color: var(--color-light); border-radius: var(--border-radius-sm); border: 1px solid #e0e0e0; } .prompt-text { flex: 1; font-weight: 600; } .drop-zone { flex: 1; min-height: 48px; border: 2px dashed #ccc; border-radius: var(--border-radius-sm); transition: background-color 0.2s; display: flex; align-items: center; justify-content: center; padding: 4px; } .drop-zone.over { background-color: #e0e0e0; } .drop-zone .answer-item { cursor: default; width: 100%; } .answer-item { padding: 12px; background-color: #fff; border: 1px solid #ddd; border-radius: var(--border-radius-sm); cursor: grab; text-align: center; user-select: none; } .answer-item .option-content img { max-height: 80px; } .answer-item:active { cursor: grabbing; } .answer-item.dragging { opacity: 0.5; } .drop-zone.correct .answer-item { border-color: var(--color-success); background-color: #e6f7ec; } .drop-zone.wrong .answer-item { border-color: var(--color-danger); background-color: #fdecea; }
+  .matching-container { display: flex; flex-wrap: wrap; gap: 20px; justify-content: space-between; margin-bottom: 20px; } .matching-column { flex: 1; min-width: 250px; display: flex; flex-direction: column; gap: 10px; } .matching-prompt-item { display: flex; align-items: center; gap: 10px; padding: 10px; background-color: var(--color-light); border-radius: var(--border-radius-sm); border: 1px solid #e0e0e0; } .prompt-text { flex: 1; font-weight: 600; } .drop-zone { flex: 1; min-height: 48px; border: 2px dashed #ccc; border-radius: var(--border-radius-sm); transition: background-color 0.2s; display: flex; align-items: center; justify-content: center; padding: 4px; } .drop-zone.over { background-color: #e0e0e0; } .drop-zone .answer-item { cursor: default; width: 100%; } .answer-item { padding: 12px; background-color: #fff; border: 1px solid #ddd; border-radius: var(--border-radius-sm); cursor: grab; text-align: center; user-select: none; } .answer-item .option-content img { max-height: 150px; } .answer-item:active { cursor: grabbing; } .answer-item.dragging { opacity: 0.5; } .drop-zone.correct .answer-item { border-color: var(--color-success); background-color: #e6f7ec; } .drop-zone.wrong .answer-item { border-color: var(--color-danger); background-color: #fdecea; }
   .ordering-container { display: flex; flex-direction: column; gap: 10px; max-width: 500px; margin: 0 auto 20px auto; border: 2px solid #ccc; padding: 15px; border-radius: var(--border-radius-md); } .ordering-item { padding: 15px; background-color: #fff; border: 1px solid #ddd; border-radius: var(--border-radius-sm); cursor: grab; user-select: none; transition: background-color 0.2s, box-shadow 0.2s; display: flex; align-items: center; gap: 10px; } .ordering-item::before { content: '☰'; color: #999; font-weight: bold; } .ordering-item:active { cursor: grabbing; } .ordering-item.dragging { opacity: 0.5; background-color: #e0e0e0; box-shadow: var(--shadow-md); } .ordering-container.correct { border-color: var(--color-success); } .ordering-container.wrong { border-color: var(--color-danger); } .correct-order-display { background-color: #fff3cd; color: #856404; padding: 10px 15px; border-radius: var(--border-radius-sm); margin-top: 15px; border: 1px solid #ffeeba; text-align: right; } .correct-order-display ol { padding-right: 20px; margin: 5px 0; }
   .connecting-lines-container { position: relative; display: flex; justify-content: space-between; gap: 20px; margin-bottom: 20px; } .connecting-lines-column { flex: 1; display: flex; flex-direction: column; gap: 15px; z-index: 2; } .connect-item { padding: 12px; border: 2px solid #ccc; border-radius: var(--border-radius-md); cursor: pointer; transition: border-color 0.2s, background-color 0.2s; background-color: #fff; display: flex; align-items: center; min-height: 60px; } .connect-item.selected { border-color: var(--color-primary); background-color: #e7f1ff; box-shadow: 0 0 8px rgba(0, 123, 255, 0.5); } .connect-item .option-content { flex-direction: row; justify-content: flex-start; gap: 10px; pointer-events: none; } .connect-item[data-connected="true"] { background-color: #f0f0f0; cursor: not-allowed; } .connect-item.connect-correct { background-color: #e6f7ec; border-color: var(--color-success); } .connect-item.connect-wrong { background-color: #fdecea; border-color: var(--color-danger); } #connectingLinesCanvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 1; }
   .controls { display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; margin-top: 24px; }

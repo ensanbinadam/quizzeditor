@@ -380,9 +380,6 @@ body {
   text-align: center;
   user-select: none;
 }
-.answer-item .option-content img {
-  max-height: 80px;
-}
 .answer-item:active {
   cursor: grabbing;
 }
@@ -1096,6 +1093,20 @@ footer {
   border-radius: var(--border-radius-sm);
   display: block;
 }
+
+/* Images for Matching, Ordering, and Connecting questions - LARGER SIZE */
+.prompt-text .option-content img,
+.answer-item .option-content img,
+.ordering-item img,
+.connect-item .option-content img {
+  width: 100%; /* Fill container width */
+  max-height: 150px; /* Larger size for clarity */
+  object-fit: contain;
+  border-radius: var(--border-radius-sm);
+  display: block; /* ensure it behaves as a block */
+  margin: 0 auto 8px; /* center it and add some bottom margin */
+}
+
 .option-image {
   background: transparent !important;
 }
