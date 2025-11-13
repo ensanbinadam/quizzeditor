@@ -150,6 +150,8 @@ body {
   box-shadow: var(--shadow-sm);
   border: 1px solid #e0e0e0;
   text-align: right;
+  max-height: 250px;
+  overflow-y: auto;
 }
 
 .quiz-box {

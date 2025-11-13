@@ -22,6 +22,9 @@ let connectState = {
   observer: null,
 };
 
+// Flag to track if the current question in the editor is a new, unsaved one.
+let isNewQuestionPendingSave = false;
+
 // ======== Bootstrap ثابت/افتراضي آمن ========
 const STORAGE_KEY = "quiz_teacher_lite_no_math_ar_v6_connecting";
 
@@ -2694,42 +2697,41 @@ window.saveEdit = function () {
   const q = state.questions[state.currentQuestion];
   if (!q) return;
 
-  if (!q.reading) q.reading = { text: "", image: null, audio: null };
-  if (!q.question) q.question = { text: "", image: null };
-
+  // Step 1: Gather all data from the form into a temporary object.
   const cleanHTML = (html) =>
     (html || "").replace(/(<p><br><\/p>|\s|&nbsp;)*$/, "").trim();
 
-  const questionType = document.getElementById("editQuestionType").value;
-  if (q.type !== questionType) {
-    q.type = questionType;
-    window.ensureQuestionSanity(q);
-  }
+  const rawData = {
+    type: document.getElementById("editQuestionType").value,
+    reading: {
+      text: cleanHTML(document.getElementById("editReadingText").innerHTML),
+      image: q.reading.image, // Assume images are already in state from their handlers
+      audio: q.reading.audio,
+    },
+    question: {
+      text: cleanHTML(document.getElementById("editQuestionText").innerHTML),
+      image: q.question.image,
+    },
+    feedback: cleanHTML(document.getElementById("editFeedback").innerHTML),
+  };
 
-  q.reading.text = cleanHTML(
-    document.getElementById("editReadingText").innerHTML
-  );
-  q.question.text = cleanHTML(
-    document.getElementById("editQuestionText").innerHTML
-  );
-  q.feedback = cleanHTML(document.getElementById("editFeedback").innerHTML);
+  // Step 2: Gather type-specific data and perform validation.
+  let isValid = true;
 
-  if (q.type === "multiple-choice") {
+  if (rawData.type === "multiple-choice") {
     const optionCards = document.querySelectorAll(
       "#multipleChoiceOptionsContainer .dynamic-item-card"
     );
     const newOptions = [];
     let newCorrectIndex = -1;
 
-    optionCards.forEach((card, index) => {
+    optionCards.forEach((card) => {
       const textInput = card.querySelector('input[type="text"]');
       const preview = card.querySelector(".preview-img");
       const radio = card.querySelector('input[type="radio"]');
-
       const text = textInput ? textInput.value.trim() : "";
       const image =
         preview && preview.style.display !== "none" ? preview.src : null;
-
       if (text || image) {
         newOptions.push({ text, image });
         if (radio && radio.checked) {
@@ -2740,54 +2742,59 @@ window.saveEdit = function () {
 
     if (newOptions.length < 2) {
       alert("يجب إدخال خيارين على الأقل (نصًا أو صورة) قبل الحفظ.");
-      return;
-    }
-
-    if (newCorrectIndex === -1) {
+      isValid = false;
+    } else if (newCorrectIndex === -1) {
       alert("يجب اختيار إجابة صحيحة من ضمن الخيارات المعبأة.");
-      return;
+      isValid = false;
+    } else {
+      rawData.options = newOptions;
+      rawData.correct = newCorrectIndex;
     }
-
-    q.options = newOptions;
-    q.correct = newCorrectIndex;
-  } else if (q.type === "fill-in-the-blank") {
-    q.correctAnswer = (
+  } else if (rawData.type === "fill-in-the-blank") {
+    const answer = (
       document.getElementById("editCorrectAnswer").value || ""
     ).trim();
-    if (!q.correctAnswer) {
+    if (!answer) {
       alert("يرجى إدخال إجابة صحيحة لسؤال 'املأ الفراغ'.");
-      return;
+      isValid = false;
+    } else {
+      rawData.correctAnswer = answer;
     }
-  } else if (q.type === "true-false") {
+  } else if (rawData.type === "true-false") {
     const correctRadio = document.querySelector(
       'input[name="correctTFAnswer"]:checked'
     );
     if (!correctRadio) {
       alert("يرجى اختيار 'صح' أو 'خطأ' كإجابة صحيحة.");
-      return;
+      isValid = false;
+    } else {
+      rawData.correctAnswer = correctRadio.value === "true";
     }
-    q.correctAnswer = correctRadio.value === "true";
-  } else if (q.type === "short-answer") {
-    q.correctAnswer = (
+  } else if (rawData.type === "short-answer") {
+    const answer = (
       document.getElementById("editShortAnswer").value || ""
     ).trim();
-    if (!q.correctAnswer) {
+    if (!answer) {
       alert("يرجى إدخال الإجابة النموذجية لسؤال 'الإجابة القصيرة'.");
-      return;
+      isValid = false;
+    } else {
+      rawData.correctAnswer = answer;
     }
-  } else if (q.type === "matching" || q.type === "connecting-lines") {
+  } else if (
+    rawData.type === "matching" ||
+    rawData.type === "connecting-lines"
+  ) {
     const prompts = [];
     const answers = [];
-    const prefix = q.type === "matching" ? "Match" : "Connect";
     const containerId =
-      q.type === "matching"
+      rawData.type === "matching"
         ? "matchingPairsContainer"
         : "connectingPairsContainer";
     const pairCards = document.querySelectorAll(
       `#${containerId} .dynamic-item-card`
     );
 
-    pairCards.forEach((card, i) => {
+    pairCards.forEach((card) => {
       const promptInput = card.querySelector(
         '.matching-item-container:first-child input[type="text"]'
       );
@@ -2800,7 +2807,6 @@ window.saveEdit = function () {
       const answerPreview = card.querySelector(
         ".matching-item-container:last-child .preview-img"
       );
-
       const promptText = promptInput ? promptInput.value.trim() : "";
       const answerText = answerInput ? answerInput.value.trim() : "";
       const promptImage =
@@ -2811,7 +2817,6 @@ window.saveEdit = function () {
         answerPreview && answerPreview.style.display !== "none"
           ? answerPreview.src
           : null;
-
       if (promptText || promptImage || answerText || answerImage) {
         prompts.push({ text: promptText, image: promptImage || null });
         answers.push({ text: answerText, image: answerImage || null });
@@ -2820,12 +2825,12 @@ window.saveEdit = function () {
 
     if (prompts.length < 2) {
       alert("يجب إدخال زوجين على الأقل للمطابقة أو التوصيل.");
-      return;
+      isValid = false;
+    } else {
+      rawData.prompts = prompts;
+      rawData.answers = answers;
     }
-
-    q.prompts = prompts;
-    q.answers = answers;
-  } else if (q.type === "ordering") {
+  } else if (rawData.type === "ordering") {
     const items = [];
     const itemCards = document.querySelectorAll(
       "#orderingItemsContainer .dynamic-item-card"
@@ -2837,7 +2842,6 @@ window.saveEdit = function () {
       const itemText = textInput ? textInput.value.trim() : "";
       const itemImage =
         preview && preview.style.display !== "none" ? preview.src : null;
-
       if (itemText || itemImage) {
         items.push({ text: itemText, image: itemImage });
       }
@@ -2845,26 +2849,81 @@ window.saveEdit = function () {
 
     if (items.length < 2) {
       alert("يجب إدخال عنصرين على الأقل للترتيب (نص أو صورة).");
-      return;
+      isValid = false;
+    } else {
+      rawData.items = items;
     }
-    q.items = items;
   }
 
+  // Step 3: If validation fails, stop everything. The `isNewQuestionPendingSave` flag remains untouched.
+  if (!isValid) {
+    return;
+  }
+
+  // Step 4: If validation passes, create a new question object and replace the old one.
+  const sanitizedQuestion = {};
+  // Copy over the shared properties first
+  Object.assign(sanitizedQuestion, {
+    reading: rawData.reading,
+    question: rawData.question,
+    feedback: rawData.feedback,
+  });
+  // Copy the raw data which includes type-specific properties
+  Object.assign(sanitizedQuestion, rawData);
+
+  // Replace the old question object with the new, fully formed one.
+  state.questions[state.currentQuestion] = sanitizedQuestion;
+  // Final sanity check to remove any extraneous properties from type changes.
+  window.ensureQuestionSanity(state.questions[state.currentQuestion]);
+
+  // Step 5: Finalize the save action and prepare for the next question.
+  isNewQuestionPendingSave = false;
   window.persist();
   window.addNewQuestion();
 };
 
 window.cancelEdit = function () {
+  if (isNewQuestionPendingSave) {
+    // This was a temporary, auto-created question. The user is canceling it.
+    // So, we remove it from the state.
+    state.questions.splice(state.currentQuestion, 1);
+    state.answeredQuestions.splice(state.currentQuestion, 1);
+    state.lastWrong.splice(state.currentQuestion, 1);
+    state.shuffledMaps.splice(state.currentQuestion, 1);
+
+    // After deleting, the index might be out of bounds. Correct it.
+    state.currentQuestion = Math.max(0, state.currentQuestion - 1);
+  }
+
+  // Always reset the flag when canceling.
+  isNewQuestionPendingSave = false;
+
+  // If after all that, we have no questions, we must create one to avoid a dead state.
+  if (state.questions.length === 0) {
+    const newQ = { type: "multiple-choice" };
+    window.ensureQuestionSanity(newQ);
+    state.questions.push(newQ);
+    state.currentQuestion = 0;
+    state.answeredQuestions.push(null);
+    state.lastWrong.push(null);
+    state.shuffledMaps.push(null);
+
+    // This new question should be treated as a new, pending one.
+    isNewQuestionPendingSave = true;
+    window.persist();
+    window.populateEditForm(); // Stay in the editor with the new blank question.
+    return; // Exit here to prevent hiding the editor panel.
+  }
+
+  // If there are questions left, persist the state and exit the editor.
+  window.persist();
   document.getElementById("editPanel").style.display = "none";
   document.querySelector(".quiz-box").style.display = "block";
   document.getElementById("countersBox").style.display = "flex";
-  const q = window.getCurrentQuestionOrCreate();
-  const hasReading =
-    q && q.reading && (q.reading.text || q.reading.image || q.reading.audio);
-  document.getElementById("readingText").style.display = hasReading
-    ? "block"
-    : "none";
-  window.startTimer();
+
+  // Re-render the main quiz view at the new correct index.
+  // showQuestion() will handle everything from here.
+  window.showQuestion();
 };
 
 window.duplicateCurrentQuestion = function () {
@@ -2875,6 +2934,7 @@ window.duplicateCurrentQuestion = function () {
   state.answeredQuestions.splice(state.currentQuestion, 0, null);
   state.lastWrong.splice(state.currentQuestion, 0, null);
   state.shuffledMaps.splice(state.currentQuestion, 0, null);
+  isNewQuestionPendingSave = false; // A duplicated question is not a "pending new" one.
   window.persist();
   const editPanel = document.getElementById("editPanel");
   if (editPanel && editPanel.style.display === "block")
@@ -2896,6 +2956,7 @@ window.addNewQuestion = function (isInitial = false) {
   state.answeredQuestions.splice(state.currentQuestion, 0, null);
   state.lastWrong.splice(state.currentQuestion, 0, null);
   state.shuffledMaps.splice(state.currentQuestion, 0, null);
+  isNewQuestionPendingSave = true; // This new question is pending save.
   window.populateEditForm();
   window.persist();
 };
@@ -2906,6 +2967,8 @@ window.deleteCurrentQuestion = function () {
     return;
   }
   if (!confirm("هل أنت متأكد من حذف هذا السؤال؟")) return;
+
+  isNewQuestionPendingSave = false; // Deleting is an explicit action, so any pending state is void.
 
   state.questions.splice(state.currentQuestion, 1);
   state.answeredQuestions.splice(state.currentQuestion, 1);
@@ -3215,14 +3278,14 @@ window.saveAppForOfflineUse = function () {
   .header { margin-bottom: 24px; padding: 16px; background: #fff; border-radius: var(--border-radius-lg); box-shadow: var(--shadow-sm); }
   .header-grid { display: grid; grid-template-columns: 140px 1fr; align-items: center; gap: 16px; text-align: unset; }
   .header-logo { display: flex; align-items: center; justify-content: center; }
-  .header-logo img { max-width: 100%; height: auto; object-fit: contain; }
+  .header-main { text-align: center; }
   .header-main h1 { margin: 0 0 8px 0; color: var(--color-primary); font-size: 1.8em; }
   .header-main p { margin: 0; font-size: 1.1em; color: #555; }
   @media (max-width: 600px) { .header-grid { grid-template-columns: 100px 1fr; gap: 12px; } .header-main h1 { font-size: 1.4em; } }
   .counters { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; margin: 16px 0; }
   #questionCounter, #timer, #scoreCounter { background: #ffffff; padding: 16px; border-radius: var(--border-radius-md); font-weight: 700; font-size: 1.1em; text-align: center; box-shadow: var(--shadow-sm); color: var(--color-dark); display: flex; align-items: center; justify-content: center; gap: 10px; }
   #questionCounter::before { content: "📌"; } #scoreCounter::before { content: "🏆"; } #timer::before { content: "⏳"; font-size: 1.2em; }
-  .reading-text { background: #ffffff; color: #333; padding: 20px; border-radius: var(--border-radius-md); margin-bottom: 16px; font-size: 1.15em; line-height: 1.8; box-shadow: var(--shadow-sm); border: 1px solid #e0e0e0; }
+  .reading-text { background: #ffffff; color: #333; padding: 20px; border-radius: var(--border-radius-md); margin-bottom: 16px; font-size: 1.15em; line-height: 1.8; box-shadow: var(--shadow-sm); border: 1px solid #e0e0e0; max-height: 250px; overflow-y: auto; }
   .reading-text img, .question img, .reading-text-content img, .question-text img { width: 100%; height: auto; object-fit: contain; max-height: 50vh; border-radius: var(--border-radius-md); margin: 12px 0; display: block; }
   audio { width: 100%; margin: 8px 0; }
   .quiz-box { background: #ffffff; border-radius: var(--border-radius-lg); padding: 24px; box-shadow: var(--shadow-md); color: var(--color-text); overflow: hidden; }
