@@ -2230,6 +2230,13 @@ window.attachEditPanelEvents = function () {
   setupDragAndDrop(document.getElementById("connectingPairsContainer"));
   setupDragAndDrop(document.getElementById("orderingItemsContainer"));
 
+  document.getElementById("addMcOptionBtn").onclick = addDynamicMcOption;
+  document.getElementById("addMatchPairBtn").onclick = () =>
+    addDynamicPair("matching");
+  document.getElementById("addConnectPairBtn").onclick = () =>
+    addDynamicPair("connecting-lines");
+  document.getElementById("addOrderItemBtn").onclick = addDynamicOrderItem;
+
   // Setup Rich Text Editor Toolbars
   document.querySelectorAll(".rte-toolbar").forEach((toolbar) => {
     toolbar.addEventListener("click", (e) => {
@@ -2344,6 +2351,139 @@ function createMediaTools(type, index, subtype, initialImage) {
     preview.src = initialImage;
     preview.style.display = "block";
   }
+
+  // Attach event listeners after a delay to ensure elements are in the DOM
+  setTimeout(() => {
+    const pasteBtn = document.getElementById(pasteBtnId);
+    const fileInput = document.getElementById(fileInputId);
+    const clearBtn = document.getElementById(clearBtnId);
+
+    if (pasteBtn) {
+      pasteBtn.onclick = () => {
+        const q = window.getCurrentQuestionOrCreate();
+        pasteImageFromClipboard(previewId, (base64) => {
+          if (type === "mc") {
+            if (!q.options[index]) q.options[index] = {};
+            q.options[index].image = base64;
+          } else if (type === "match" || type === "connect") {
+            const targetArray = subtype === "prompt" ? q.prompts : q.answers;
+            if (!targetArray[index]) targetArray[index] = {};
+            targetArray[index].image = base64;
+          } else if (type === "order") {
+            if (!q.items[index]) q.items[index] = {};
+            q.items[index].image = base64;
+          }
+        });
+      };
+    }
+
+    if (fileInput) {
+      fileInput.onchange = () => {
+        const q = window.getCurrentQuestionOrCreate();
+        handleBinaryUpload(fileInput, previewId, (base64) => {
+          if (type === "mc") {
+            if (!q.options[index]) q.options[index] = {};
+            q.options[index].image = base64;
+          } else if (type === "match" || type === "connect") {
+            const targetArray = subtype === "prompt" ? q.prompts : q.answers;
+            if (!targetArray[index]) targetArray[index] = {};
+            targetArray[index].image = base64;
+          } else if (type === "order") {
+            if (!q.items[index]) q.items[index] = {};
+            q.items[index].image = base64;
+          }
+        });
+      };
+    }
+
+    if (clearBtn) {
+      clearBtn.onclick = () => {
+        const q = window.getCurrentQuestionOrCreate();
+        clearMedia(previewId, fileInputId, () => {
+          if (type === "mc") {
+            if (q.options[index]) q.options[index].image = null;
+          } else if (type === "match" || type === "connect") {
+            const targetArray = subtype === "prompt" ? q.prompts : q.answers;
+            if (targetArray[index]) targetArray[index].image = null;
+          } else if (type === "order") {
+            if (q.items[index]) q.items[index].image = null;
+          }
+        });
+      };
+    }
+  }, 0);
+
+  return { toolsContainer, preview };
+}
+
+function addDynamicPair(questionType) {
+  const containerId =
+    questionType === "matching"
+      ? "matchingPairsContainer"
+      : "connectingPairsContainer";
+  const container = document.getElementById(containerId);
+  const index = container.children.length;
+  const type = questionType === "matching" ? "match" : "connect";
+
+  const card = document.createElement("div");
+  card.className = "dynamic-item-card";
+  card.draggable = true;
+  card.dataset.index = index;
+
+  const dragHandle = document.createElement("div");
+  dragHandle.className = "drag-handle";
+  dragHandle.innerHTML = "☰";
+  card.appendChild(dragHandle);
+
+  const deleteBtn = document.createElement("button");
+  deleteBtn.className = "delete-item-btn";
+  deleteBtn.innerHTML = "&times;";
+  deleteBtn.title = "حذف الزوج";
+  deleteBtn.onclick = () => card.remove();
+  card.appendChild(deleteBtn);
+
+  const grid = document.createElement("div");
+  grid.className = "matching-grid";
+  grid.style.paddingRight = "30px";
+
+  // Prompt
+  const promptContainer = document.createElement("div");
+  promptContainer.className = "matching-item-container";
+  const promptInput = document.createElement("input");
+  promptInput.type = "text";
+  promptInput.className = "form-control";
+  promptInput.placeholder = `العنصر ${index + 1}`;
+  const { toolsContainer: pTools, preview: pPreview } = createMediaTools(
+    type,
+    index,
+    "prompt",
+    null
+  );
+  promptContainer.append(promptInput, pTools, pPreview);
+
+  // Answer
+  const answerContainer = document.createElement("div");
+  answerContainer.className = "matching-item-container";
+  const answerInput = document.createElement("input");
+  answerInput.type = "text";
+  answerInput.className = "form-control";
+  answerInput.placeholder = `الإجابة ${index + 1}`;
+  const { toolsContainer: aTools, preview: aPreview } = createMediaTools(
+    type,
+    index,
+    "answer",
+    null
+  );
+  answerContainer.append(answerInput, aTools, aPreview);
+
+  grid.append(promptContainer, answerContainer);
+  card.appendChild(grid);
+  container.appendChild(card);
+}
+
+function renderDynamicPairs(containerId, prompts, answers) {
+  const container = document.getElementById(containerId);
+  container.innerHTML = "";
 
   return { toolsContainer, preview };
 }
@@ -2669,15 +2809,22 @@ window.saveEdit = function () {
     q.answers = answers;
   } else if (q.type === "ordering") {
     const items = [];
-    for (let i = 1; i <= 5; i++) {
-      const itemText = (
-        document.getElementById(`editOrderItem${i}`).value || ""
-      ).trim();
-      const itemImage = q.items[i - 1]?.image || null;
+    const itemCards = document.querySelectorAll(
+      "#orderingItemsContainer .dynamic-item-card"
+    );
+
+    itemCards.forEach((card) => {
+      const textInput = card.querySelector('input[type="text"]');
+      const preview = card.querySelector(".preview-img");
+      const itemText = textInput ? textInput.value.trim() : "";
+      const itemImage =
+        preview && preview.style.display !== "none" ? preview.src : null;
+
       if (itemText || itemImage) {
         items.push({ text: itemText, image: itemImage });
       }
-    }
+    });
+
     if (items.length < 2) {
       alert("يجب إدخال عنصرين على الأقل للترتيب (نص أو صورة).");
       return;
@@ -3189,3 +3336,102 @@ document.addEventListener("DOMContentLoaded", function () {
     window.persist();
   });
 });
+
+function addDynamicOrderItem() {
+  const container = document.getElementById("orderingItemsContainer");
+  const index = container.children.length;
+
+  const card = document.createElement("div");
+  card.className = "dynamic-item-card";
+  card.draggable = true;
+  card.dataset.index = index;
+
+  const dragHandle = document.createElement("div");
+  dragHandle.className = "drag-handle";
+  dragHandle.innerHTML = "☰";
+  card.appendChild(dragHandle);
+
+  const deleteBtn = document.createElement("button");
+  deleteBtn.className = "delete-item-btn";
+  deleteBtn.innerHTML = "&times;";
+  deleteBtn.title = "حذف العنصر";
+  deleteBtn.onclick = () => card.remove();
+  card.appendChild(deleteBtn);
+
+  const itemContainer = document.createElement("div");
+  itemContainer.className = "ordering-edit-item";
+  itemContainer.style.paddingRight = "30px";
+
+  const itemInput = document.createElement("input");
+  itemInput.type = "text";
+  itemInput.className = "form-control";
+  itemInput.placeholder = `العنصر ${index + 1}`;
+
+  const { toolsContainer, preview } = createMediaTools(
+    "order",
+    index,
+    "item",
+    null
+  );
+
+  itemContainer.append(itemInput, toolsContainer, preview);
+  card.appendChild(itemContainer);
+  container.appendChild(card);
+}
+
+function addDynamicMcOption() {
+  const container = document.getElementById("multipleChoiceOptionsContainer");
+  const index = container.children.length;
+
+  const card = document.createElement("div");
+  card.className = "dynamic-item-card";
+  card.draggable = true;
+  card.dataset.index = index;
+
+  const dragHandle = document.createElement("div");
+  dragHandle.className = "drag-handle";
+  dragHandle.innerHTML = "☰";
+  card.appendChild(dragHandle);
+
+  const deleteBtn = document.createElement("button");
+  deleteBtn.className = "delete-item-btn";
+  deleteBtn.innerHTML = "&times;";
+  deleteBtn.title = "حذف الخيار";
+  deleteBtn.onclick = () => {
+    if (container.children.length <= 2) {
+      alert("يجب أن يحتوي السؤال على خيارين على الأقل.");
+      return;
+    }
+    card.remove();
+  };
+  card.appendChild(deleteBtn);
+
+  const editorContent = document.createElement("div");
+  editorContent.className = "mc-option-editor";
+
+  const radio = document.createElement("input");
+  radio.type = "radio";
+  radio.name = "dynamicCorrectOption";
+  if (index === 0) radio.checked = true;
+  editorContent.appendChild(radio);
+
+  const inputContainer = document.createElement("div");
+  inputContainer.style.flexGrow = "1";
+  const textInput = document.createElement("input");
+  textInput.type = "text";
+  textInput.className = "form-control";
+  textInput.placeholder = `الخيار ${index + 1}`;
+
+  const { toolsContainer, preview } = createMediaTools(
+    "mc",
+    index,
+    "option",
+    null
+  );
+
+  inputContainer.append(textInput, toolsContainer, preview);
+  editorContent.appendChild(inputContainer);
+
+  card.appendChild(editorContent);
+  container.appendChild(card);
+}
