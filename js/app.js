@@ -1486,27 +1486,51 @@ window.restartQuiz = function () {
   state.timeLeft = state.questionTime;
   state.answeredQuestions = new Array(state.questions.length).fill(null);
   state.lastWrong = new Array(state.questions.length).fill(null);
+  state.shuffledMaps = []; // Reset shuffle maps for a new experience
 
-  const quizBox = document.querySelector(".quiz-box");
-  if (quizBox) quizBox.style.display = "block";
-
+  const welcomeScreen = document.getElementById("welcomeScreen");
+  const quizContainer = document.getElementById("quizContainer");
   const scoreBoard = document.getElementById("scoreBoard");
-  if (scoreBoard) scoreBoard.style.display = "none";
 
-  const teacherButtons = document.getElementById("teacherButtons");
-  if (teacherButtons) teacherButtons.style.display = "flex";
+  // This check correctly identifies the student version which has a welcome screen.
+  if (welcomeScreen && quizContainer) {
+    const quizBox = document.querySelector(".quiz-box");
+    const countersBox = document.getElementById("countersBox");
 
-  const countersBox = document.getElementById("countersBox");
-  if (countersBox) countersBox.style.display = "flex";
+    // FIX: Re-display the inner components of the quiz so they are ready for the next start.
+    if (quizBox) quizBox.style.display = "block";
+    if (countersBox) countersBox.style.display = "flex";
 
-  const progress = document.getElementById("progress");
-  if (progress) progress.style.width = "0%";
+    // Now hide the main container and show the welcome screen
+    if (scoreBoard) scoreBoard.style.display = "none";
+    if (quizContainer) quizContainer.style.display = "none";
+    welcomeScreen.style.display = "flex";
 
-  document.querySelectorAll(".option").forEach((o) => {
-    o.classList.remove("correct", "wrong");
-    o.removeAttribute("aria-disabled");
-  });
-  window.showQuestion();
+    // Also reset counters and progress bar visually for the next run
+    window.updateQuestionCounter();
+    window.updateScoreCounter();
+    window.updateTimerDisplay();
+    const progress = document.getElementById("progress");
+    if (progress) progress.style.width = "0%";
+  } else {
+    // Original behavior for the teacher view
+    const quizBox = document.querySelector(".quiz-box");
+    if (quizBox) quizBox.style.display = "block";
+    if (scoreBoard) scoreBoard.style.display = "none";
+    const teacherButtons = document.getElementById("teacherButtons");
+    if (teacherButtons) teacherButtons.style.display = "flex";
+    const countersBox = document.getElementById("countersBox");
+    if (countersBox) countersBox.style.display = "flex";
+    const progress = document.getElementById("progress");
+    if (progress) progress.style.width = "0%";
+
+    document.querySelectorAll(".option").forEach((o) => {
+      o.classList.remove("correct", "wrong");
+      o.removeAttribute("aria-disabled");
+    });
+    window.showQuestion(); // This also persists state
+  }
+  window.persist(); // Persist the reset state. This is safe for both versions.
 };
 
 window.togglePause = function () {
@@ -3073,6 +3097,24 @@ window.saveAppForOfflineUse = function () {
       })
       .join("\n\n");
 
+    const startQuizFunction = `
+        function startQuiz() {
+            const welcome = document.getElementById('welcomeScreen');
+            const quiz = document.getElementById('quizContainer');
+            if (welcome) welcome.style.display = 'none';
+            if (quiz) quiz.style.display = 'block';
+
+            if (state.questions.length > 0) {
+                if (state.currentQuestion >= state.questions.length) state.currentQuestion = 0;
+                showQuestion(); 
+            } else { 
+                updateQuestionCounter(); 
+                updateScoreCounter(); 
+                updateTimerDisplay(); 
+            } 
+        }
+        `;
+
     const fullScript = [
       `const STORAGE_KEY = "quiz_student_progress_${Date.now()}";`,
       `const EASTERN = ["٠", "١", "٢", "٣", "٤", "٥", "٦", "٧", "٨", "٩"];`,
@@ -3081,6 +3123,7 @@ window.saveAppForOfflineUse = function () {
       }", numeralType: "${numeralType}" };`,
       `let draggedItem = null, orderingDraggedItem = null;`,
       `let connectState = { from: null, connections: [], canvas: null, observer: null };`,
+      startQuizFunction,
       functionDeclarations,
       certificateJS,
       `document.addEventListener("DOMContentLoaded", function() { 
@@ -3091,16 +3134,70 @@ window.saveAppForOfflineUse = function () {
             if (!state.lastWrong || state.lastWrong.length !== state.questions.length) {
                 state.lastWrong = new Array(state.questions.length).fill(null);
             }
-            if (state.questions.length > 0) {
-                if (state.currentQuestion >= state.questions.length) state.currentQuestion = 0;
-                showQuestion();
-            } else { 
-                updateQuestionCounter(); 
-                updateScoreCounter(); 
-                updateTimerDisplay(); 
-            } 
+            // Quiz does not start automatically. It waits for startQuiz() to be called.
         });`,
     ].join("\n");
+
+    const footersHTML = `
+        ${
+          teacherFooterHTML
+            ? `<footer id="teacherFooter">${teacherFooterHTML}</footer>`
+            : ``
+        }
+        <footer id="quizFooter">${baseFooterHTML}</footer>
+    `;
+
+    const welcomeScreenHTML = `
+    <div id="welcomeScreen" style="display: flex; flex-direction: column; align-items: center; justify-content: space-between; min-height: 95vh; text-align: center; padding: 20px;">
+        <div style="flex-grow: 1;"></div>
+        <div>
+            ${
+              logoData
+                ? `<div class="header-logo"><img src="${logoData}" alt="${logoAlt}" style="max-width: 150px; max-height: 150px; border-radius: var(--border-radius-md); margin-bottom: 20px;" /></div>`
+                : ""
+            }
+            <h1 style="font-size: 2.2em; color: var(--color-primary); margin-bottom: 25px;">${title}</h1>
+            <button onclick="startQuiz()" style="background-color: var(--color-primary); color: white; border: none; padding: 15px 30px; font-size: 1.2em; border-radius: var(--border-radius-sm); cursor: pointer; transition: background-color 0.2s, transform 0.2s; box-shadow: var(--shadow-sm);" onmouseover="this.style.transform='translateY(-2px)';" onmouseout="this.style.transform='translateY(0)';">بسم الله نبدأ</button>
+        </div>
+        <div style="width: 100%; max-width: 900px; margin: 0 auto; flex-grow: 1; display: flex; flex-direction: column; justify-content: flex-end;">${footersHTML}</div>
+    </div>
+    `;
+
+    const quizContainerHTML = `
+    <div id="quizContainer" style="display: none;">
+        <div class="container">
+         <div class="header header-grid">
+          <div class="header-logo"> <img id="quizLogo" alt="${logoAlt}" src="${logoData}" style="${
+      logoData ? "display:block;" : "display:none;"
+    } max-width:100%; height:auto;" /> </div>
+          <div class="header-main"> <h1 id="quizTitle">${title}</h1> <p id="instructions">${instructions}</p> </div>
+         </div>
+         <div class="counters" id="countersBox">
+          <div id="questionCounter" class="counter-chip"></div>
+          <div id="timer" class="counter-chip"></div>
+          <div id="scoreCounter" class="counter-chip"></div>
+         </div>
+         <div class="reading-text" id="readingText" style="display:none"></div>
+         <div class="quiz-box">
+          <div class="question" id="question"></div>
+          <div class="options" id="options"></div>
+          <div class="controls">
+            <button class="nav-btn" id="prevBtn" onclick="previousQuestion()" disabled>السابق</button>
+            <button class="nav-btn" id="pauseBtn" onclick="togglePause()">إيقاف مؤقت</button>
+            <button class="nav-btn" id="nextBtn" onclick="nextQuestion()">التالي</button>
+          </div>
+          <div class="progress-bar"><div class="progress" id="progress"></div></div>
+         </div>
+         <div class="score-board" id="scoreBoard" style="display:none;">
+          <h2> نتيجتك النهائية: <span id="finalScore">٠</span>/<span id="totalQuestions">٠</span> </h2>
+          <div class="no-certificate-message" id="noCertificateMsg" style="display: none"> <p>للحصول على شهادة الإنجاز، يجب تحقيق 80% على الأقل من الدرجة الكلية</p> <p>حاول مرة أخرى للوصول إلى هذا المستوى!</p> </div>
+          <div class="certificate-buttons"> <button class="certificate-btn" id="certificateBtn" onclick="openCertificateForm()" style="display: none"> 🏆 الحصول على شهادة الإنجاز </button> <button class="restart-btn" onclick="restartQuiz()"> إعادة المحاولة </button> </div>
+         </div>
+        </div>
+        ${footersHTML}
+        ${certificateHTML}
+    </div>
+    `;
 
     const html = `<!DOCTYPE html>
 <html dir="rtl" lang="ar">
@@ -3174,42 +3271,8 @@ ${certificateCSS}
 </style>
 </head>
 <body>
-<div class="container">
- <div class="header header-grid">
-  <div class="header-logo"> <img id="quizLogo" alt="${logoAlt}" src="${logoData}" style="${
-      logoData ? "display:block;" : "display:none;"
-    } max-width:100%; height:auto;" /> </div>
-  <div class="header-main"> <h1 id="quizTitle">${title}</h1> <p id="instructions">${instructions}</p> </div>
- </div>
- <div class="counters" id="countersBox">
-  <div id="questionCounter" class="counter-chip"></div>
-  <div id="timer" class="counter-chip"></div>
-  <div id="scoreCounter" class="counter-chip"></div>
- </div>
- <div class="reading-text" id="readingText" style="display:none"></div>
- <div class="quiz-box">
-  <div class="question" id="question"></div>
-  <div class="options" id="options"></div>
-  <div class="controls">
-    <button class="nav-btn" id="prevBtn" onclick="previousQuestion()" disabled>السابق</button>
-    <button class="nav-btn" id="pauseBtn" onclick="togglePause()">إيقاف مؤقت</button>
-    <button class="nav-btn" id="nextBtn" onclick="nextQuestion()">التالي</button>
-  </div>
-  <div class="progress-bar"><div class="progress" id="progress"></div></div>
- </div>
- <div class="score-board" id="scoreBoard" style="display:none;">
-  <h2> نتيجتك النهائية: <span id="finalScore">٠</span>/<span id="totalQuestions">٠</span> </h2>
-  <div class="no-certificate-message" id="noCertificateMsg" style="display: none"> <p>للحصول على شهادة الإنجاز، يجب تحقيق 80% على الأقل من الدرجة الكلية</p> <p>حاول مرة أخرى للوصول إلى هذا المستوى!</p> </div>
-  <div class="certificate-buttons"> <button class="certificate-btn" id="certificateBtn" onclick="openCertificateForm()" style="display: none"> 🏆 الحصول على شهادة الإنجاز </button> <button class="restart-btn" onclick="restartQuiz()"> إعادة المحاولة </button> </div>
- </div>
-</div>
-${certificateHTML}
-${
-  teacherFooterHTML
-    ? `<footer id="teacherFooter">${teacherFooterHTML}</footer>`
-    : ``
-}
-<footer id="quizFooter">${baseFooterHTML}</footer>
+${welcomeScreenHTML}
+${quizContainerHTML}
 <script>
   ${fullScript}
 <\/script>
